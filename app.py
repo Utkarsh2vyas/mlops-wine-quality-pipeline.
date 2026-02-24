@@ -4,7 +4,7 @@ import mlflow.pyfunc
 import pandas as pd
 import os
 import dagshub
-from mlflow.tracking import MlflowClient
+from mlflow.artifacts import download_artifacts
 
 app = FastAPI(title="Wine Quality MLOps API")
 
@@ -35,22 +35,21 @@ def load_model():
     runs = mlflow.search_runs()
     latest_run_id = runs.iloc[0]["run_id"]
     
-    # --- THE SMART DOWNLOADER ---
-    client = MlflowClient()
-    artifacts = client.list_artifacts(latest_run_id)
+    print("Downloading all run artifacts to local server...")
+    local_dir = download_artifacts(run_id=latest_run_id)
     
-    # Automatically find the folder the model is hiding in
-    model_folder = ""
-    for art in artifacts:
-        if art.is_dir:
-            model_folder = art.path
+    model_path = None
+    for root, dirs, files in os.walk(local_dir):
+        if "MLmodel" in files:
+            model_path = root
             break
             
-    print(f"Auto-discovered model folder: '{model_folder}'")
-    print(f"Downloading model from run: {latest_run_id}")
+    if model_path is None:
+        raise Exception("Could not find the MLmodel file anywhere in the downloaded artifacts!")
+        
+    print(f"Found actual model at: {model_path}")
     
-    # Load the model using the auto-discovered path!
-    model = mlflow.pyfunc.load_model(f"runs:/{latest_run_id}/{model_folder}")
+    model = mlflow.pyfunc.load_model(model_path)
     print("Model loaded successfully!")
 
 @app.get("/")
