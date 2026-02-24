@@ -39,7 +39,7 @@ def load_model():
     latest_run_id = runs.iloc[0]["run_id"]
     
     print(f"Downloading model from run: {latest_run_id}")
-    model = mlflow.pyfunc.load_model(f"runs:/{latest_run_id}/wine_model")
+    model = mlflow.pyfunc.load_model(f"runs:/{latest_run_id}/model")
     print("Model loaded successfully!")
 
 # 3. Create a basic home page
